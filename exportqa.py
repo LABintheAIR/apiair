@@ -65,7 +65,7 @@ for zone, nfozone in cfg.items():
 # Export des données
 print('iqas =>', iqas)
 encstr = base64.b64encode(json.dumps(iqas).encode('utf-8'))
-r = requests.post('http://localhost:5000/post/iqa', data={'data': encstr})
+r = requests.post('http://papillon-jnth.rhcloud.com/post/iqa', data={'data': encstr})
 print(r.status_code)
 print(r.content)
 
