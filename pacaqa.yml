@@ -1,0 +1,17 @@
+marseille:
+    urb:
+        NO2: N2CINQ
+        PM10: PCCINQ
+        O3: O3CINQ
+    trf:
+        NO2: N2RABA, N2PLOM
+        PM10: PCRABA
+
+aix:
+    urb:
+        NO2: N2AIXA
+        PM10: PCAIXA
+        O3: O3AIXP
+    trf:
+        NO2: N2AIXC
+        PM10: PCAIXC
