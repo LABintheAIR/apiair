@@ -48,7 +48,7 @@ def colorize(v, param):
             colors=['#79bc6a', '#bbcf4c', '#eec20b', '#f29305', '#960018'],
             limits=[25, 50, 75, 100]  # valeur de la limite, exclus de la classe inférieure
         ),
-        iqa=dict(
+        iqa_=dict(
             colors=['#32B8A3',
                     '#5CCB60',
                     '#99E600',
@@ -59,6 +59,10 @@ def colorize(v, param):
                     '#FF5E00',
                     '#FF0000'],
             limits=[.2, .3, .4, .5, .6, .7, .8, .9]
+        ),
+        iqa=dict(
+            colors=['#00ff00', '#ffff00', '#ff5e00', '#ff0000'],
+            limits=[.5, .75, .9]
         )
     )
 
