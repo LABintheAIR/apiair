@@ -9,6 +9,7 @@ import base64
 import json
 import pandas
 import tinydb
+from version import version
 from flask import Flask, jsonify, request
 
 
@@ -80,7 +81,7 @@ def colorize(v, param):
 @app.route('/')
 def index():
     """Index."""
-    return jsonify(dict(status='ok'))
+    return jsonify(dict(status='ok', version=version))
 
 
 # FIXME: remove this page...

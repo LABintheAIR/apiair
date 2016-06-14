@@ -1,7 +1,8 @@
 from setuptools import setup
+from version import version
 
 setup(name='papillon',
-      version='1.1',
+      version=version,
       description='papillon',
       author='alabintheair',
       author_email='jonathan.virga@alabintheair.cc',
