@@ -5,9 +5,9 @@
 
 
 import os
-import random
 import base64
 import json
+import pandas
 import tinydb
 from flask import Flask, jsonify, request
 
@@ -21,7 +21,7 @@ if 'OPENSHIFT_DATA_DIR' in os.environ:
 else:
     fndb = 'airquality.json'
 
-db = tinydb.TinyDB(fndb)
+db = tinydb.TinyDB(fndb, default_table='air')
 q = tinydb.Query()
 
 
@@ -77,89 +77,13 @@ def colorize(v, param):
             return colorhex_to_rgb(color)
 
 
-@app.route('/test/stations')
-def test_stations():
-    """Test API (stations)."""
-    choices = [(255, 0, 0), (255, 255, 0), (255, 0, 255), (0, 255, 255), (0, 0, 255)]
-
-    tmp = list()
-    for i in range(12):
-        tmp.append(random.choice(choices))
-
-    data = dict()
-    data['NO2'] = tmp
-
-    return jsonify(data)
-
-
-@app.route('/test/iqa')
-def test_iqa():
-    """Test API (iqa)."""
-    urb = random.randint(15, 60)
-    trf = random.randint(urb + 10, 100)
-
-    c_urb, c_trf = colorize(urb, 'citeair'), colorize(trf, 'citeair')
-
-    data = dict()
-    data['iqa'] = dict(urb=c_urb, trf=c_trf)
-
-    return jsonify(data)
-
-
-@app.route('/paca/iqa/<zone>/<typo>')
-def paca_iqa(zone, typo):
-    """IQA as color."""
-    enr = db.search((q.zone == zone) & (q.typo == typo))
-    if not enr:
-        return jsonify(
-            dict(status='error: cannot find data for zone=%s and typo=%s'.format(
-                **locals()))), 400
-
-    if len(enr) != 1:
-        return jsonify(dict(status='error: corrupt database !')), 400
-
-    iqa = enr[0]['iqa']
-    color = colorize(iqa, param='iqa')
-    return jsonify(dict(color=color))
-
-
-@app.route('/paca/iqa/<listzoneiqa>')
-def paca_iqa_list(listzoneiqa):
-    """List of IQA as color.
-
-    ...?output=color (default)
-    ...?output=iqa
-
-    :param listzoneiqa: list of zone and iqa as string like 'zone1-typo1,zone1-typo2,...'
-    """
-    output = request.args.get('output', 'color')
-    outlist = list()
-    for zonetypo in listzoneiqa.strip().split(','):
-        zone, typo = zonetypo.strip().split('-')
-        enr = db.search((q.zone == zone) & (q.typo == typo))
-
-        if not enr:
-            return jsonify(
-                dict(status='error: cannot find data for zone=%s and typo=%s'.format(
-                    **locals()))), 400
-
-        if len(enr) != 1:
-            return jsonify(dict(status='error: corrupt database !')), 400
-
-        iqa = enr[0]['iqa']
-        if output == 'iqa':
-            outlist.append(iqa)
-        else:
-            outlist.append(colorize(iqa, param='iqa'))
-    return jsonify(dict(list=outlist))
-
-
 @app.route('/')
 def index():
     """Index."""
     return jsonify(dict(status='ok'))
 
 
+# FIXME: remove this page...
 @app.route('/post/iqa', methods=['POST'])
 def post_iqa():
     """Save IQA data into database."""
@@ -180,5 +104,55 @@ def post_iqa():
     return jsonify(dict(status='ok'))
 
 
+@app.route('/post/v2/data', methods=['POST'])
+def post_v2_data():
+    """Save data into database."""
+    encstr = request.form['data']
+    iqas = json.loads(base64.b64decode(encstr).decode('utf-8'))  # decode data
+
+    inserted, updated = 0, 0
+
+    # Save data into database
+    for zone, nfozone in iqas.items():
+        for typo, nfotypo in nfozone.items():
+            for pol, (val, iqa) in nfotypo.items():
+
+                query = (q.zone == zone) & (q.typo == typo) & (q.pol == pol)
+                out = db.search(query)
+                if out:  # existing into databse: update it
+                    db.update({'val': val, 'iqa': iqa}, query)
+                    updated += 1
+                else:  # insert it
+                    db.insert(dict(zone=zone, typo=typo, pol=pol, val=val, iqa=iqa))
+                    inserted += 1
+
+    return jsonify(dict(status='ok', inserted=inserted, updated=updated))
+
+
+@app.route('/paca/iqa/<listzoneiqa>')
+def extr_listzoneiqa(listzoneiqa):
+    """List of IQA as color.
+
+    :param listzoneiqa: list of zone and iqa as string like 'zone1-typo1,zone1-typo2,...'
+    """
+    iqas, colors = list(), list()
+    for zonetypo in listzoneiqa.strip().split(','):
+        zone, typo = zonetypo.strip().split('-')
+        enr = db.search((q.zone == zone) & (q.typo == typo))
+
+        if not enr:
+            return jsonify(
+                dict(status='error: cannot find data for zone=%s and typo=%s'.format(
+                    **locals()))), 400
+
+        df = pandas.DataFrame(enr)
+        iqa = df['iqa'].max()  # max of each pollutant
+
+        iqas.append(iqa)
+        colors.append(colorize(iqa, param='iqa'))
+
+    return jsonify(dict(iqa=iqas, color=colors))
+
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5026, debug=True)
