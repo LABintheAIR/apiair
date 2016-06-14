@@ -143,7 +143,7 @@ def extr_listzoneiqa(listzoneiqa):
 
         if not enr:
             return jsonify(
-                dict(status='error: cannot find data for zone=%s and typo=%s'.format(
+                dict(status='error: cannot find data for zone={zone} and typo={typo}'.format(
                     **locals()))), 400
 
         df = pandas.DataFrame(enr)
