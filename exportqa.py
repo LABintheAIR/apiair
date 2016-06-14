@@ -71,9 +71,9 @@ print()
 # Export des données
 print("send data:")
 encstr = base64.b64encode(json.dumps(datas).encode('utf-8'))
-if 'OPENSHIFT_DATA_DIR' in os.environ:
-    r = requests.post('http://papillon-jnth.rhcloud.com/post/v2/iqa', data={'data': encstr})
-else:
+if os.environ['USER'] != 'jv':  # prod
+    r = requests.post('http://papillon-jnth.rhcloud.com/post/v2/data', data={'data': encstr})
+else:  # test
     r = requests.post('http://localhost:5026/post/v2/data', data={'data': encstr})
 print(" | status_code:", r.status_code)
 print(" | content:")
