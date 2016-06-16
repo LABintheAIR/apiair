@@ -5,6 +5,7 @@
 
 
 import os
+import sys
 import base64
 import datetime
 import json
@@ -15,6 +16,9 @@ import yaml
 from pprint import pprint
 from tabulate import tabulate
 
+
+# Arguments
+host = sys.argv[1]
 
 # Configuration pour le calcul de l'indice
 cfgiqa = {'NO2': 200, 'PM10': 50, 'O3': 180}
@@ -69,12 +73,9 @@ pprint(datas)
 print()
 
 # Export des données
-print("send data:")
+print("send data to {host} ...".format(**locals()))
 encstr = base64.b64encode(json.dumps(datas).encode('utf-8'))
-if os.environ['USER'] != 'jv':  # prod
-    r = requests.post('http://papillon-jnth.rhcloud.com/post/v2/data', data={'data': encstr})
-else:  # test
-    r = requests.post('http://localhost:5026/post/v2/data', data={'data': encstr})
+r = requests.post(host + '/post/v2/data', data={'data': encstr})
 print(" | status_code:", r.status_code)
 print(" | content:")
 print(r.content.decode('utf-8'))
