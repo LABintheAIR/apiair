@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
-"""Papillon Air Quality API."""
+"""Air Quality API."""
 
 
 import os
@@ -14,14 +14,10 @@ from flask import Flask, jsonify, request
 
 
 # Application Flask
-app = Flask('papillon')
+app = Flask('apiair')
 
 # Base de données pour le stockage des indices
-if 'OPENSHIFT_DATA_DIR' in os.environ:
-    fndb = os.path.join(os.environ['OPENSHIFT_DATA_DIR'], 'airquality.json')
-else:
-    fndb = 'airquality.json'
-
+fndb = 'airquality.json'
 db = tinydb.TinyDB(fndb, default_table='air')
 q = tinydb.Query()
 
@@ -82,27 +78,6 @@ def colorize(v, param):
 def index():
     """Index."""
     return jsonify(dict(status='ok', version=version))
-
-
-# FIXME: remove this page...
-@app.route('/post/iqa', methods=['POST'])
-def post_iqa():
-    """Save IQA data into database."""
-    encstr = request.form['data']
-    iqas = json.loads(base64.b64decode(encstr).decode('utf-8'))  # decode data
-
-    # Save data into database
-
-    for zone, nfozone in iqas.items():
-        for typo, iqa in nfozone.items():
-
-            out = db.search((q.zone == zone) & (q.typo == typo))
-            if out:  # existing into databse: update it
-                db.update({'iqa': iqa}, (q.zone == zone) & (q.typo == typo))
-            else:  # insert it
-                db.insert(dict(zone=zone, typo=typo, iqa=iqa))
-
-    return jsonify(dict(status='ok'))
 
 
 @app.route('/post/v2/data', methods=['POST'])
