@@ -1,22 +1,23 @@
 #!/usr/bin/env python3.5
 # coding: utf-8
 
+
 """Air PACA air quality data."""
 
 
-import os
-import sys
 import base64
 import datetime
-import logging
 import json
-import requests
+import logging
+import os
+import pprint
+import sys
+
 import pandas
 import pyair
+import requests
 import yaml
-import pprint
 from tabulate import tabulate
-
 
 # Log
 log = logging.getLogger('exportqa')
@@ -27,7 +28,6 @@ lc.setFormatter(logging.Formatter(fmt='[{asctime}] {levelname:8} | {message}',
                                   datefmt='%Y-%m-%d %H:%M:%S', style='{'))
 log.addHandler(lc)
 del lc
-
 
 # Arguments
 host = sys.argv[1]
@@ -66,12 +66,16 @@ for zone, nfozone in cfg.items():
 
         for pol, mesures in nfotypo.items():
             mesures = [e.strip() for e in mesures.strip().split(',')]
-            dat = xr.get_mesures(mes=mesures, debut=d1, fin=d2).dropna().mean(axis=1)
-            log.debug("get mesures of {}: found {} hourly data".format(mesures, len(dat)))
+            dat = xr.get_mesures(
+                mes=mesures, debut=d1, fin=d2).dropna().mean(axis=1)
+            log.debug("get mesures of {}: found {} hourly data".format(
+                mesures, len(dat)))
 
             if pol == 'PM10':
                 # Moyenne glissante
-                dat = pandas.rolling_mean(dat, window=24, min_periods=18).dropna()
+                dat = pandas.rolling_mean(dat,
+                                          window=24,
+                                          min_periods=18).dropna()
                 log.debug("PM10: apply 24h rolling mean...")
 
             if dat.empty:
@@ -86,13 +90,15 @@ for zone, nfozone in cfg.items():
                 # FIXME: alerte si données trop ancienne
 
                 # Enregistrement de la donnée
-                rows.append((zone, typo, pol, dh, val, val / cfgiqa[pol] * 100.))
+                rows.append(
+                    (zone, typo, pol, dh, val, val / cfgiqa[pol] * 100.))
                 datas[zone][typo][pol] = (val, val / cfgiqa[pol] * 100.)
 
 # Affichage des données
-log.info("Result:\n" + tabulate(rows,
-                                headers=('zone', 'typo', 'pol', 'dh', 'val', 'iqa'),
-                                numalign="right", floatfmt=".0f", missingval='--'))
+result_table = tabulate(rows,
+                        headers=('zone', 'typo', 'pol', 'dh', 'val', 'iqa'),
+                        numalign="right", floatfmt=".0f", missingval='--')
+log.info("result:\n" + result_table)
 
 log.info("datas:\n" + pprint.pformat(datas))
 
