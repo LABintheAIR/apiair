@@ -8,17 +8,30 @@ import os
 import sys
 import base64
 import datetime
+import logging
 import json
 import requests
 import pandas
 import pyair
 import yaml
-from pprint import pprint
+import pprint
 from tabulate import tabulate
+
+
+# Log
+log = logging.getLogger('exportqa')
+log.setLevel(logging.DEBUG)
+
+lc = logging.StreamHandler()
+lc.setFormatter(logging.Formatter(fmt='[{asctime}] {levelname:8} | {message}',
+                                  datefmt='%Y-%m-%d %H:%M:%S', style='{'))
+log.addHandler(lc)
+del lc
 
 
 # Arguments
 host = sys.argv[1]
+log.debug("host is {}".format(host))
 
 # Configuration pour le calcul de l'indice
 cfgiqa = {'NO2': 200, 'PM10': 50, 'O3': 180}
@@ -31,11 +44,16 @@ with open("pacaqa.yml") as f:
 now = datetime.datetime.now()
 d2 = datetime.date.today()
 d1 = d2 - datetime.timedelta(days=1)
+log.debug("d1 is {d1:%Y-%m-%d %H:%M:%S}, d2 is {d2:%Y-%m-%d %H:%M:%S}".format(
+    **locals()))
 
+# Lecture variables d'environnement
+adr = os.environ['XR_HOST']
+user = os.environ['XR_USER']
+pwd = os.environ['XR_PASSWORD']
 # Connection à la base de données
-xr = pyair.xair.XAIR(adr=os.environ['XR_HOST'],
-                     user=os.environ['XR_USER'],
-                     pwd=os.environ['XR_PASSWORD'])
+xr = pyair.xair.XAIR(adr=adr, user=user, pwd=pwd)
+log.debug("database connection {}@{} ok".format(user, adr))
 
 # Lecture des données
 datas = dict()
@@ -49,35 +67,40 @@ for zone, nfozone in cfg.items():
         for pol, mesures in nfotypo.items():
             mesures = [e.strip() for e in mesures.strip().split(',')]
             dat = xr.get_mesures(mes=mesures, debut=d1, fin=d2).dropna().mean(axis=1)
+            log.debug("get mesures of {}: found {} hourly data".format(mesures, len(dat)))
 
             if pol == 'PM10':
                 # Moyenne glissante
                 dat = pandas.rolling_mean(dat, window=24, min_periods=18).dropna()
+                log.debug("PM10: apply 24h rolling mean...")
 
-            # Lecture de la dernière données disponible
-            val = dat.ix[-1]
-            dh = dat.index[-1].to_pydatetime()
-            # FIXME: alerte si données trop ancienne
+            if dat.empty:
+                log.debug("no data for these mesures !")
+                rows.append((zone, typo, pol, None, None, None))
+                datas[zone][typo][pol] = (None, None)
 
-            rows.append((zone, typo, pol, dh, val, val / cfgiqa[pol] * 100.))
+            else:
+                # Lecture de la dernière données disponible
+                val = dat.ix[-1]
+                dh = dat.index[-1].to_pydatetime()
+                # FIXME: alerte si données trop ancienne
 
-            # Enregistrement de la donnée
-            datas[zone][typo][pol] = (val, val / cfgiqa[pol] * 100.)
+                # Enregistrement de la donnée
+                rows.append((zone, typo, pol, dh, val, val / cfgiqa[pol] * 100.))
+                datas[zone][typo][pol] = (val, val / cfgiqa[pol] * 100.)
 
 # Affichage des données
-print(tabulate(rows, headers=('zone', 'typo', 'pol', 'dh', 'val', 'iqa'), numalign="right",
-               floatfmt=".0f"))
-print()
-print("datas:")
-pprint(datas)
-print()
+log.info("Result:\n" + tabulate(rows,
+                                headers=('zone', 'typo', 'pol', 'dh', 'val', 'iqa'),
+                                numalign="right", floatfmt=".0f", missingval='--'))
+
+log.info("datas:\n" + pprint.pformat(datas))
 
 # Export des données
-print("send data to {host} ...".format(**locals()))
+log.debug("send data to {} ...".format(host))
 encstr = base64.b64encode(json.dumps(datas).encode('utf-8'))
 r = requests.post(host + '/post/v2/data', data={'data': encstr})
-print(" | status_code:", r.status_code)
-print(" | content:")
-print(r.content.decode('utf-8'))
+log.debug("status_code: {}".format(r.status_code))
+log.debug("content:\n" + r.content.decode('utf-8'))
 
 xr.disconnect()
