@@ -11,7 +11,9 @@ import pandas
 import tinydb
 from version import version
 from flask import Flask, jsonify, request
+from simplecrypt import decrypt
 
+# FIXME: mettre un peu d'ordre dans toutes ces adresses...
 
 # Application Flask
 app = Flask('apiair')
@@ -20,6 +22,12 @@ app = Flask('apiair')
 fndb = 'airquality.json'
 db = tinydb.TinyDB(fndb, default_table='air')
 q = tinydb.Query()
+
+# Stockage des données de qualité de l'air
+fndat = 'airquality.dat'
+
+# Clé via variable d'environnement
+key = os.environ['APIAIR_KEY']
 
 
 def colorhex_to_rgb(chex):
@@ -105,6 +113,17 @@ def post_v2_data():
     return jsonify(dict(status='ok', inserted=inserted, updated=updated))
 
 
+@app.route('/post/v2/data_v2', methods=['POST'])
+def post_v2_data_v2():
+    """Save data into local file."""
+    encstr = request.form['data']
+
+    with open(fndat, 'w') as f:
+        f.write(decrypt(key, base64.b64decode(encstr)).decode('utf-8'))
+
+    return jsonify(dict(status='ok'))
+
+
 @app.route('/paca/iqa/<listzoneiqa>')
 def extr_listzoneiqa(listzoneiqa):
     """List of IQA as color.
@@ -128,6 +147,28 @@ def extr_listzoneiqa(listzoneiqa):
         colors.append(colorize(iqa, param='iqa'))
 
     return jsonify(dict(iqa=iqas, color=colors))
+
+
+@app.route('/get/latest/data/<listmesures>')
+def get_data(listmesures):
+    """Extract air quality data.
+
+    :param listmesures: list of measure names as string like 'mes1,mes2,...'
+    """
+    listmesures = listmesures.strip().split(',')
+
+    # Read data from local file
+    dat = pandas.read_csv(fndat)
+
+    idx = dat['dh'].tolist()
+    extr = dict()
+
+    for mes in listmesures:
+        if mes not in dat:
+            return jsonify(dict(status='error', message="cannot find '{}' measure !".format(mes))), 400
+        extr[mes] = dat[mes].tolist()
+
+    return jsonify(dict(status='ok', index=idx, data=extr))
 
 
 if __name__ == '__main__':
