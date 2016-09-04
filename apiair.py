@@ -15,16 +15,19 @@ from simplecrypt import decrypt
 
 # FIXME: mettre un peu d'ordre dans toutes ces adresses...
 
+# Dossier des données
+datadir = os.environ.get('OPENSHIFT_DATA_DIR', '.')
+
 # Application Flask
 app = Flask('apiair')
 
 # Base de données pour le stockage des indices
-fndb = 'airquality.json'
+fndb = os.path.join(datadir, 'airquality.json')
 db = tinydb.TinyDB(fndb, default_table='air')
 q = tinydb.Query()
 
 # Stockage des données de qualité de l'air
-fndat = 'airquality.dat'
+fndat = os.path.join(datadir, 'airquality.dat')
 
 # Clé via variable d'environnement
 key = os.environ['APIAIR_KEY']
