@@ -2,7 +2,7 @@
 # coding: utf-8
 
 
-from flaskapp import app as application
+from apiair import app as application
 
 
 #
