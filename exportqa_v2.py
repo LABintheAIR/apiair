@@ -61,7 +61,7 @@ encstr = base64.b64encode(encrypt(key, dat.to_csv(index_label='dh')))
 
 # Export des données
 log.debug("send data to {} ...".format(host))
-r = requests.post(host + '/post/v2/data_v2', data={'data': encstr})
+r = requests.post(host + '/post/conc/paca', data={'data': encstr})
 log.debug("status_code: {}".format(r.status_code))
 log.debug("content:\n" + r.content.decode('utf-8'))
 

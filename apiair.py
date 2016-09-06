@@ -13,7 +13,6 @@ from version import version
 from flask import Flask, jsonify, request
 from simplecrypt import decrypt
 
-# FIXME: mettre un peu d'ordre dans toutes ces adresses...
 
 # Dossier des données
 datadir = os.environ.get('OPENSHIFT_DATA_DIR', '.')
@@ -21,13 +20,9 @@ datadir = os.environ.get('OPENSHIFT_DATA_DIR', '.')
 # Application Flask
 app = Flask('apiair')
 
-# Base de données pour le stockage des indices
-fndb = os.path.join(datadir, 'airquality.json')
-db = tinydb.TinyDB(fndb, default_table='air')
-q = tinydb.Query()
-
-# Stockage des données de qualité de l'air
-fndat = os.path.join(datadir, 'airquality.dat')
+# Stockage des données
+fndb = os.path.join(datadir, '{region}_iqa.json')  # iqa, last hour
+fndat = os.path.join(datadir, '{region}_conc.dat')  # conc, last two days
 
 # Clé via variable d'environnement
 key = os.environ['APIAIR_KEY']
@@ -91,9 +86,16 @@ def index():
     return jsonify(dict(status='ok', version=version))
 
 
-@app.route('/post/v2/data', methods=['POST'])
-def post_v2_data():
-    """Save data into database."""
+# @app.route('/post/v2/data', methods=['POST'])
+@app.route('/post/iqa/<region>', methods=['POST'])
+def post_iqa(region):
+    """Save data into database.
+
+    :param region: name of region.
+    """
+    db = tinydb.TinyDB(fndb.format(region=region), default_table='air')
+    q = tinydb.Query()
+
     encstr = request.form['data']
     iqas = json.loads(base64.b64decode(encstr).decode('utf-8'))  # decode data
 
@@ -116,23 +118,31 @@ def post_v2_data():
     return jsonify(dict(status='ok', inserted=inserted, updated=updated))
 
 
-@app.route('/post/v2/data_v2', methods=['POST'])
-def post_v2_data_v2():
-    """Save data into local file."""
+# @app.route('/post/v2/data_v2', methods=['POST'])
+@app.route('/post/conc/<region>', methods=['POST'])
+def post_conc(region):
+    """Save data into local file.
+
+    :param region: name of region.
+    """
     encstr = request.form['data']
 
-    with open(fndat, 'w') as f:
+    with open(fndat.format(region=region), 'w') as f:
         f.write(decrypt(key, base64.b64decode(encstr)).decode('utf-8'))
 
     return jsonify(dict(status='ok'))
 
 
-@app.route('/paca/iqa/<listzoneiqa>')
-def extr_listzoneiqa(listzoneiqa):
+@app.route('/get/iqa/<region>/<listzoneiqa>')
+def extr_listzoneiqa(region, listzoneiqa):
     """List of IQA as color.
 
+    :param region: name of region.
     :param listzoneiqa: list of zone and iqa as string like 'zone1-typo1,zone1-typo2,...'
     """
+    db = tinydb.TinyDB(fndb.format(region=region), default_table='air')
+    q = tinydb.Query()
+
     iqas, colors = list(), list()
     for zonetypo in listzoneiqa.strip().split(','):
         zone, typo = zonetypo.strip().split('-')
@@ -152,16 +162,17 @@ def extr_listzoneiqa(listzoneiqa):
     return jsonify(dict(iqa=iqas, color=colors))
 
 
-@app.route('/get/latest/data/<listmesures>')
-def get_data(listmesures):
+@app.route('/get/conc/<region>/<listmesures>')
+def get_data(region, listmesures):
     """Extract air quality data.
 
+    :param region: name of region.
     :param listmesures: list of measure names as string like 'mes1,mes2,...'
     """
     listmesures = listmesures.strip().split(',')
 
     # Read data from local file
-    dat = pandas.read_csv(fndat)
+    dat = pandas.read_csv(fndat.format(region=region))
 
     idx = dat['dh'].tolist()
     extr = dict()

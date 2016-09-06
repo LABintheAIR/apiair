@@ -105,7 +105,7 @@ log.info("datas:\n" + pprint.pformat(datas))
 # Export des données
 log.debug("send data to {} ...".format(host))
 encstr = base64.b64encode(json.dumps(datas).encode('utf-8'))
-r = requests.post(host + '/post/v2/data', data={'data': encstr})
+r = requests.post(host + '/post/iqa/paca', data={'data': encstr})
 log.debug("status_code: {}".format(r.status_code))
 log.debug("content:\n" + r.content.decode('utf-8'))
 
