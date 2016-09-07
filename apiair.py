@@ -85,14 +85,14 @@ def colorize(v, param):
 @app.route('/')
 @autodoc.doc()
 def index():
-    """Index."""
+    """Information about API (version)."""
     return jsonify(dict(status='ok', version=version))
 
 
 @app.route('/post/iqa/<region>', methods=['POST'])
 @autodoc.doc()
 def post_iqa(region):
-    """Save data into database.
+    """Save last air quality information (index, color) into database.
 
     :param region: name of region.
     """
@@ -124,7 +124,7 @@ def post_iqa(region):
 @app.route('/post/conc/<region>', methods=['POST'])
 @autodoc.doc()
 def post_conc(region):
-    """Save data into local file.
+    """Save air quality data into local file.
 
     :param region: name of region.
     """
@@ -139,7 +139,7 @@ def post_conc(region):
 @app.route('/get/iqa/<region>/<listzoneiqa>')
 @autodoc.doc()
 def extr_listzoneiqa(region, listzoneiqa):
-    """List of IQA as color.
+    """Get latest air quality information (index, color).
 
     :param region: name of region.
     :param listzoneiqa: list of zone and iqa as string like 'zone1-typo1,zone1-typo2,...'
@@ -169,7 +169,7 @@ def extr_listzoneiqa(region, listzoneiqa):
 @app.route('/get/conc/<region>/<listmesures>')
 @autodoc.doc()
 def get_data(region, listmesures):
-    """Extract air quality data.
+    """Get air quality data.
 
     :param region: name of region.
     :param listmesures: list of measure names as string like 'mes1,mes2,...'
@@ -193,7 +193,7 @@ def get_data(region, listmesures):
 @app.route('/doc')
 @autodoc.doc()
 def doc():
-    """API documentation."""
+    """Documentation."""
     return autodoc.html(title='apiair documentation', template='documentation.html')
 
 
