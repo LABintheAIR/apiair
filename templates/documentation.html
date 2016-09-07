@@ -1,0 +1,91 @@
+<html>
+    <head>
+        <title>
+            {% if title is defined -%}
+                {{title}}
+            {% else -%}
+                Documentation
+            {% endif -%}
+        </title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                font-family: "Ubuntu Mono", Verdana, "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
+                font-size: 12pt;
+            }
+
+            body {
+                margin: 10px;
+            }
+            
+            h1 { font-size: 1.5em; }
+            h2 { font-size: 1.2em; }
+
+            div.mapping {
+                margin: 20px 20px;
+                border: solid 1px #ccc;
+                border-left: solid 5px #ccc;
+                background-color: #f0f0f0;
+                padding: 10px;
+                border-radius: 5px;
+            }
+
+            ul.methods { margin-top: 10px; color: #888; }
+            ul.methods:before { content: "Methods: "; }
+            ul.methods li {
+                display: inline;
+                list-style: none;
+            }
+            ul.methods li:after { content: ","; }
+            ul.methods li:last-child:after { content: ""; }
+
+            ul.arguments { margin-top: 1px; color: #888; }
+            ul.arguments:before { content: "Arguments: "; }
+            ul.arguments li {
+                display: inline;
+                list-style: none;
+            }
+            ul.arguments .argument { font-style:italic }
+            ul.arguments .default:not(:empty):before { content: "("; }
+            ul.arguments .default:not(:empty):after { content: ")"; }
+            ul.arguments li:after { content: ","; }
+            ul.arguments li:last-child:after { content: ""; }
+
+            .docstring { margin-top: 15px; }
+            
+            .code { color: red; background-color: #fee; border: 1px solid #ff8888; border-radius: 3px;
+                    padding-left: 1px; padding-right: 1px; }
+        </style>
+        
+    </head>
+    <body>
+        <h1>
+            {% if title is defined -%}
+                {{title}}
+            {% else -%}
+                Documentation
+            {% endif -%}
+        </h1>
+
+        {% for doc in autodoc %}
+        <div class="mapping">
+            <a id="rule-{{doc.rule|urlencode}}" class="rule"><h2>{{doc.rule|escape}}</h2></a>
+            <ul class="methods">
+                {% for method in doc.methods -%}
+                    <li class="method"><span class='code'>{{method}}</span></li>
+                {% endfor %}
+            </ul>
+            <ul class="arguments">
+                {% for arg in doc.args %}
+                <li>
+                    <span class="argument">{{arg}}</span>
+                    <span class="default">{{doc.defaults[arg]}}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            <p class="docstring">{{doc.docstring|urlize|nl2br|safe}}</p>
+        </div>
+        {% endfor %}
+    </body>
+</html>

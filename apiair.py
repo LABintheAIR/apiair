@@ -11,6 +11,7 @@ import pandas
 import tinydb
 from version import version
 from flask import Flask, jsonify, request
+from flask.ext.autodoc import Autodoc
 from simplecrypt import decrypt
 
 
@@ -19,6 +20,7 @@ datadir = os.environ.get('OPENSHIFT_DATA_DIR', '.')
 
 # Application Flask
 app = Flask('apiair')
+autodoc = Autodoc(app)  # Autodoc extension
 
 # Stockage des données
 fndb = os.path.join(datadir, '{region}_iqa.json')  # iqa, last hour
@@ -81,13 +83,14 @@ def colorize(v, param):
 
 
 @app.route('/')
+@autodoc.doc()
 def index():
     """Index."""
     return jsonify(dict(status='ok', version=version))
 
 
-# @app.route('/post/v2/data', methods=['POST'])
 @app.route('/post/iqa/<region>', methods=['POST'])
+@autodoc.doc()
 def post_iqa(region):
     """Save data into database.
 
@@ -118,8 +121,8 @@ def post_iqa(region):
     return jsonify(dict(status='ok', inserted=inserted, updated=updated))
 
 
-# @app.route('/post/v2/data_v2', methods=['POST'])
 @app.route('/post/conc/<region>', methods=['POST'])
+@autodoc.doc()
 def post_conc(region):
     """Save data into local file.
 
@@ -134,6 +137,7 @@ def post_conc(region):
 
 
 @app.route('/get/iqa/<region>/<listzoneiqa>')
+@autodoc.doc()
 def extr_listzoneiqa(region, listzoneiqa):
     """List of IQA as color.
 
@@ -163,6 +167,7 @@ def extr_listzoneiqa(region, listzoneiqa):
 
 
 @app.route('/get/conc/<region>/<listmesures>')
+@autodoc.doc()
 def get_data(region, listmesures):
     """Extract air quality data.
 
@@ -183,6 +188,13 @@ def get_data(region, listmesures):
         extr[mes] = dat[mes].tolist()
 
     return jsonify(dict(status='ok', index=idx, data=extr))
+
+
+@app.route('/doc')
+@autodoc.doc()
+def doc():
+    """API documentation."""
+    return autodoc.html(title='apiair documentation', template='documentation.html')
 
 
 if __name__ == '__main__':
