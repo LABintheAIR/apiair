@@ -31,6 +31,8 @@
                 border-radius: 5px;
             }
 
+            li.param { color: #333; margin-left: 20px; font-style: italic; }
+
             ul.methods { margin-top: 10px; color: #888; }
             ul.methods:before { content: "Methods: "; }
             ul.methods li {
@@ -52,7 +54,7 @@
             ul.arguments li:after { content: ","; }
             ul.arguments li:last-child:after { content: ""; }
 
-            .docstring { margin-top: 15px; }
+            .docstring { margin-top: 15px; color: #333; }
             
             .code { color: red; background-color: #fee; border: 1px solid #ff8888; border-radius: 3px;
                     padding-left: 1px; padding-right: 1px; }
@@ -84,7 +86,7 @@
                 </li>
                 {% endfor %}
             </ul>
-            <p class="docstring">{{doc.docstring|urlize|nl2br|safe}}</p>
+            <p class="docstring">{{doc.docstring|urlize|nl2br|doc|safe}}</p>
         </div>
         {% endfor %}
     </body>

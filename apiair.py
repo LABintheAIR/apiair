@@ -5,6 +5,7 @@
 
 
 import os
+import re
 import base64
 import json
 import pandas
@@ -28,6 +29,24 @@ fndat = os.path.join(datadir, '{region}_conc.dat')  # conc, last two days
 
 # Clé via variable d'environnement
 key = os.environ['APIAIR_KEY']
+
+
+@app.template_filter('doc')
+def filter_docstring(s):
+    """Specific filter for docstring."""
+    # Replace ":param var: some text" in "<li>var</li>: some text"
+    expr = ':param(.*):(.*)'
+    extr = re.findall(expr, s)
+    origs = [":param{}:{}".format(*e) for e in extr]
+    news = ["<li class='param'><u>{}</u>:{}</li>".format(*e) for e in extr]
+
+    if len(news):
+        news[0] = "<ul>" + news[0]
+        news[-1] += "</ul>"
+
+    for orig, new in zip(origs, news):
+        s = s.replace(orig, new)
+    return s
 
 
 def colorhex_to_rgb(chex):
