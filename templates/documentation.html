@@ -22,6 +22,8 @@
             h1 { font-size: 1.5em; }
             h2 { font-size: 1.2em; }
 
+            pre { font-size: 10pt; background-color: #e7e7e7; padding: 8px; color: #7e7e7e; margin-left: 15px; }
+            
             div.mapping {
                 margin: 20px 20px;
                 border: solid 1px #ccc;
@@ -31,7 +33,8 @@
                 border-radius: 5px;
             }
 
-            li.param { color: #333; margin-left: 20px; font-style: italic; }
+            ul.params { line-height: 0.6; }
+            ul.params li { color: #333; margin-left: 20px; font-style: italic; }
 
             ul.methods { margin-top: 10px; color: #888; }
             ul.methods:before { content: "Methods: "; }
@@ -86,7 +89,7 @@
                 </li>
                 {% endfor %}
             </ul>
-            <p class="docstring">{{doc.docstring|urlize|nl2br|doc|safe}}</p>
+            <p class="docstring">{{doc.docstring|doc|safe}}</p>
         </div>
         {% endfor %}
     </body>

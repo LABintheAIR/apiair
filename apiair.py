@@ -31,6 +31,20 @@ fndat = os.path.join(datadir, '{region}_conc.dat')  # conc, last two days
 key = os.environ['APIAIR_KEY']
 
 
+def strip_with_indent(s):
+    """Remove extra space in code.
+
+    :param s: string.
+    :return: string.
+    """
+    # Find the length of first indentation
+    fl = s.split('\n')[0].replace('\t', '    ')
+    ni = len(fl) - len(fl.lstrip())
+
+    # Remove all extra indentation
+    return "\n".join([l[ni:] for l in s.split('\n')])
+
+
 @app.template_filter('doc')
 def filter_docstring(s):
     """Specific filter for docstring."""
@@ -38,14 +52,29 @@ def filter_docstring(s):
     expr = ':param(.*):(.*)'
     extr = re.findall(expr, s)
     origs = [":param{}:{}".format(*e) for e in extr]
-    news = ["<li class='param'><u>{}</u>:{}</li>".format(*e) for e in extr]
+    news = ["<li><u>{}</u>:{}</li>".format(*e) for e in extr]
 
     if len(news):
-        news[0] = "<ul>" + news[0]
+        news[0] = "<ul class='params'>" + news[0]
         news[-1] += "</ul>"
 
     for orig, new in zip(origs, news):
         s = s.replace(orig, new)
+
+    # Replace ".. some code .." in "<code> some code .."
+    # Remove extra indentation in <pre>
+    s = s.replace('...', '%%%')  # keep '...' safe !
+    poss = [m.start() for m in re.finditer('\.\.', s)]  # find position of all '..'
+    poss = [(poss[i], poss[i + 1]) for i in range(0, len(poss), 2)]  # group by 2 elements
+    for p1, p2 in poss[::-1]:  # reverse list:
+        code = s[p1+2:p2]
+        ni = len(code.replace('\n', '')) - len(code.replace('\n', '').lstrip())
+        clean = '<pre>' + '\n'.join([e[ni:] for e in code.split('\n') if e]) + '</pre>'
+        s = s[:p1] + '\n' + clean + s[p2+2:]
+
+    # Restore '...' and replace all nl with br.
+    s = s.replace('%%%', '...').replace('\n', '<br />')
+
     return s
 
 
@@ -104,12 +133,20 @@ def colorize(v, param):
 @app.route('/')
 @autodoc.doc()
 def index():
-    """Information about API (version)."""
+    """Information about API (version).
+
+    Response in JSON format:
+    ..
+    {
+      "status": "ok",
+      "version": 0.3
+    }
+    ..
+    """
     return jsonify(dict(status='ok', version=version))
 
 
 @app.route('/post/iqa/<region>', methods=['POST'])
-@autodoc.doc()
 def post_iqa(region):
     """Save last air quality information (index, color) into database.
 
@@ -141,7 +178,6 @@ def post_iqa(region):
 
 
 @app.route('/post/conc/<region>', methods=['POST'])
-@autodoc.doc()
 def post_conc(region):
     """Save air quality data into local file.
 
@@ -162,6 +198,27 @@ def extr_listzoneiqa(region, listzoneiqa):
 
     :param region: name of region.
     :param listzoneiqa: list of zone and iqa as string like 'zone1-typo1,zone1-typo2,...'
+
+    Examples of use:
+    ..
+        /get/iqa/paca/aix-urb
+        /get/iqa/paca/marseille-urb,marseille-trf
+    ..
+
+    Response in JSON format:
+    ..
+    {
+      "color": [
+        [ 255, 0, 0 ],
+        [ 255, 0, 0 ]
+      ],
+      "iqa": [
+        48.75,
+        71.67
+      ]
+    }
+    ..
+
     """
     db = tinydb.TinyDB(fndb.format(region=region), default_table='air')
     q = tinydb.Query()
@@ -192,6 +249,34 @@ def get_data(region, listmesures):
 
     :param region: name of region.
     :param listmesures: list of measure names as string like 'mes1,mes2,...'
+
+    Examples of use:
+    ..
+        /get/conc/paca/N2CINQ
+        /get/conc/paca/PCCINQ,PCAIXA
+    ..
+
+    Response in JSON format:
+    ..
+    {
+      "data": {
+        "N2CINQ": [
+          7.0,
+          4.0,
+          6.0,
+          ...
+        ],
+        ...
+      },
+      "index": [
+        "2016-09-07 01:00:00",
+        "2016-09-07 02:00:00",
+        "2016-09-07 03:00:00",
+         ...
+      ],
+      "status": "ok"
+    }
+    ..
     """
     listmesures = listmesures.strip().split(',')
 
