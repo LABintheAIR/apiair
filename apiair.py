@@ -14,6 +14,7 @@ from version import version
 from flask import Flask, jsonify, request
 from flask.ext.autodoc import Autodoc
 from simplecrypt import decrypt
+from shapely.geometry import Point
 
 
 # Dossier des données
@@ -257,6 +258,55 @@ def get_iqa_listzoneiqa(region, listzoneiqa):
         concs.append(conc)
 
     return jsonify(dict(iqa=iqas, color=colors, concentrations=concs))
+
+
+@app.route('/get/iqa/<region>/<float:lon>,<float:lat>')
+@autodoc.doc()
+def get_iqa_geoloc(region, lon, lat):
+    """Get latest air quality information (index, color, concentrations)
+    from geolocation.
+
+    :param region: name of region.
+    :param lon: longitude (degrees).
+    :param lat: latitude (degrees).
+
+    Example of use:
+    ..
+        /get/iqa/paca/5.6375,43.6377
+    ..
+
+    Response in JSON format:
+    ..
+    {
+      "color": [
+        [ 255, 0, 0 ]
+      ],
+      "concentrations": [
+        {
+          "NO2": 26.0,
+          "O3": 147.0,
+          "PM10": 26.125
+        }
+      ],
+      "iqa": [
+        81.67
+      ]
+    }
+    ..
+    """
+    # FIXME: this is a testing function.
+
+    aix = Point(5.454025, 43.531127)
+    marseille = Point(5.369889, 43.296346)
+
+    loc = Point(lon, lat)  # location of user
+    d_aix = loc.distance(aix)
+    d_marseille = loc.distance(marseille)
+
+    if d_aix < d_marseille:
+        return get_iqa_listzoneiqa(region, 'aix-urb')
+    else:
+        return get_iqa_listzoneiqa(region, 'marseille-urb')
 
 
 @app.route('/get/conc/<region>/<listmesures>')
