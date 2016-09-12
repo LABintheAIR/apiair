@@ -193,7 +193,7 @@ def post_conc(region):
 
 @app.route('/get/iqa/<region>/<listzoneiqa>')
 @autodoc.doc()
-def extr_listzoneiqa(region, listzoneiqa):
+def get_iqa_listzoneiqa(region, listzoneiqa):
     """Get latest air quality information (index, color, concentrations).
 
     :param region: name of region.
@@ -261,7 +261,7 @@ def extr_listzoneiqa(region, listzoneiqa):
 
 @app.route('/get/conc/<region>/<listmesures>')
 @autodoc.doc()
-def get_data(region, listmesures):
+def get_conc_listmesures(region, listmesures):
     """Get air quality data.
 
     :param region: name of region.
