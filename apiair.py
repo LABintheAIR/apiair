@@ -245,7 +245,7 @@ def extr_listzoneiqa(region, listzoneiqa):
                 dict(status='error: cannot find data for zone={zone} and typo={typo}'.format(
                     **locals()))), 400
 
-        df = pandas.DataFrame(enr)
+        df = pandas.DataFrame(enr).dropna()
         iqa = df['iqa'].max()  # max of each pollutant
         conc = dict(zip(df['pol'].tolist(), df['val'].tolist()))
         for pol in ('NO2', 'PM10', 'O3'):
