@@ -194,7 +194,7 @@ def post_conc(region):
 @app.route('/get/iqa/<region>/<listzoneiqa>')
 @autodoc.doc()
 def extr_listzoneiqa(region, listzoneiqa):
-    """Get latest air quality information (index, color).
+    """Get latest air quality information (index, color, concentrations).
 
     :param region: name of region.
     :param listzoneiqa: list of zone and iqa as string like 'zone1-typo1,zone1-typo2,...'
@@ -212,9 +212,21 @@ def extr_listzoneiqa(region, listzoneiqa):
         [ 255, 0, 0 ],
         [ 255, 0, 0 ]
       ],
+      "concentrations": [
+        {
+          "NO2": 26.0,
+          "O3": 147.0,
+          "PM10": 26.125
+        },
+        {
+          "NO2": 109.0,
+          "O3": null,
+          "PM10": 32.46
+        }
+      ],
       "iqa": [
-        48.75,
-        71.67
+        81.67,
+        64.97
       ]
     }
     ..
@@ -223,7 +235,7 @@ def extr_listzoneiqa(region, listzoneiqa):
     db = tinydb.TinyDB(fndb.format(region=region), default_table='air')
     q = tinydb.Query()
 
-    iqas, colors = list(), list()
+    iqas, colors, concs = list(), list(), list()
     for zonetypo in listzoneiqa.strip().split(','):
         zone, typo = zonetypo.strip().split('-')
         enr = db.search((q.zone == zone) & (q.typo == typo))
@@ -235,11 +247,16 @@ def extr_listzoneiqa(region, listzoneiqa):
 
         df = pandas.DataFrame(enr)
         iqa = df['iqa'].max()  # max of each pollutant
+        conc = dict(zip(df['pol'].tolist(), df['val'].tolist()))
+        for pol in ('NO2', 'PM10', 'O3'):
+            if pol not in conc:
+                conc[pol] = None
 
         iqas.append(iqa)
         colors.append(colorize(iqa, param='iqa'))
+        concs.append(conc)
 
-    return jsonify(dict(iqa=iqas, color=colors))
+    return jsonify(dict(iqa=iqas, color=colors, concentrations=concs))
 
 
 @app.route('/get/conc/<region>/<listmesures>')
