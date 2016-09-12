@@ -14,7 +14,7 @@ from version import version
 from flask import Flask, jsonify, request
 from flask.ext.autodoc import Autodoc
 from simplecrypt import decrypt
-from shapely.geometry import Point
+from geopy.distance import vincenty
 
 
 # Dossier des données
@@ -296,12 +296,12 @@ def get_iqa_geoloc(region, lon, lat):
     """
     # FIXME: this is a testing function.
 
-    aix = Point(5.454025, 43.531127)
-    marseille = Point(5.369889, 43.296346)
+    aix = (5.454025, 43.531127)
+    marseille = (5.369889, 43.296346)
 
-    loc = Point(lon, lat)  # location of user
-    d_aix = loc.distance(aix)
-    d_marseille = loc.distance(marseille)
+    loc = (lon, lat)  # location of user
+    d_aix = vincenty(loc, aix).kilometers
+    d_marseille = vincenty(loc, marseille).kilometers
 
     if d_aix < d_marseille:
         return get_iqa_listzoneiqa(region, 'aix-urb')
