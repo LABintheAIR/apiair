@@ -233,6 +233,16 @@ def get_iqa_listzoneiqa(region, listzoneiqa):
     ..
 
     """
+    # Special case with London (with no colors)
+    # /get/iqa/london/urb,trf
+    if region == 'london':
+        from libapiair import LondonAirQuality, londoncolor
+        laq = LondonAirQuality()
+        iqas = laq.get_hourly_air_quality_index('cityoflondon')
+        print(iqas)
+        colors = [londoncolor(iqa) for iqa in iqas]
+        return jsonify(dict(iqa=iqas, color=colors))
+
     db = tinydb.TinyDB(fndb.format(region=region), default_table='air')
     q = tinydb.Query()
 
