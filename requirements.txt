@@ -7,4 +7,5 @@ PyYAML == 3.11
 requests == 2.10.0
 simple-crypt == 4.1.7
 geopy == 1.11.0
+colorutils == 0.2.1
 git+https://github.com/LionelR/pyair.git@467e8a843ca9f882f8bb2958805b7293591996ad

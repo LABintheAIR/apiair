@@ -8,9 +8,11 @@ import os
 import re
 import base64
 import json
+import random
 import pandas
 import tinydb
 from version import version
+import colorutils
 from flask import Flask, jsonify, request
 from flask.ext.autodoc import Autodoc
 from simplecrypt import decrypt
@@ -190,6 +192,29 @@ def post_conc(region):
         f.write(decrypt(key, base64.b64decode(encstr)).decode('utf-8'))
 
     return jsonify(dict(status='ok'))
+
+
+@app.route('/get/iqa/random')
+def get_iqa_random():
+    """Get random colors.
+
+    Examples of use:
+    ..
+        /get/iqa/random
+    ..
+
+    Response in JSON format:
+    ..
+    {
+      "color": [255, 128, 0]
+    }
+    ..
+    """
+    # Random color in hue
+    h, s, v = random.randint(0, 359), 1.0, 1.0
+    c = colorutils.Color(hsv=(h, s, v))
+    r, g, b = [int(e) for e in c.rgb]
+    return jsonify(dict(color=[r, g, b]))
 
 
 @app.route('/get/iqa/<region>/<listzoneiqa>')
