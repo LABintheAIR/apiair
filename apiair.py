@@ -195,6 +195,7 @@ def post_conc(region):
 
 
 @app.route('/get/iqa/random')
+@autodoc.doc()
 def get_iqa_random():
     """Get random colors.
 
